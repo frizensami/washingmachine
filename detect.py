@@ -1,6 +1,10 @@
+print "Booting python script..."
+
 import RPi.GPIO as GPIO
 import time
 import datetime
+
+from firebase import firebase
 
 ### Constants
 LIGHT_OFF = 0
@@ -23,6 +27,9 @@ LED_PIN = 12
 
 # Debouncing time
 BOUNCETIME = 50
+
+# Floor number for installed pi
+FLOOR_NUMBER = "9"
 
 # Util functions
 current_milli_time = lambda: int(round(time.time() * 1000))
@@ -100,27 +107,27 @@ def setup_devices_gpio():
 
     GPIO.setup(LED_PIN, GPIO.OUT)
 
-def set_led_high():
-    GPIO.output(LED_PIN, GPIO.HIGH)
+def exception_handler(request, exception):
+    print "For request: " + str(request) + " got exception: " + str(exception)
 
-def set_led_low():
-    GPIO.output(LED_PIN, GPIO.LOW)
 
-def flash_led():
-    while True:
-        time.sleep(0.2)
-        GPIO.output(LED_PIN, GPIO.LOW)
-        time.sleep(0.2)
-
+def response_callback(response):
+    print response
 
 if __name__ == "__main__":
+    print "Initializing Firebase connection"
+    # Open up network conn to Firebase
+    firebase = firebase.FirebaseApplication('https://tlaundry2.firebaseio.com', None)
+    print "Firebase connection set up."
+
+    print "Starting async firebase get"
 
     # List of BCM-coded Raspi pins
-    WASHER1 = Device(pin=18, name="WASHER01", machinetype=WASHER, paymenttype=PAY_EZLINK)
-    WASHER2 = Device(pin=23, name="WASHER02", machinetype=WASHER, paymenttype=PAY_EZLINK)
-    WASHER3 = Device(pin=24, name="WASHER03", machinetype=WASHER, paymenttype=PAY_EZLINK)
-    WASHER4 = Device(pin=25, name="WASHER04", machinetype=WASHER, paymenttype=PAY_COIN)
-    WASHER5 = Device(pin=8,  name="WASHER05", machinetype=WASHER, paymenttype=PAY_COIN)
+    WASHER1 = Device(pin=18, name="WASHER1", machinetype=WASHER, paymenttype=PAY_EZLINK)
+    WASHER2 = Device(pin=23, name="WASHER2", machinetype=WASHER, paymenttype=PAY_EZLINK)
+    WASHER3 = Device(pin=24, name="WASHER3", machinetype=WASHER, paymenttype=PAY_EZLINK)
+    WASHER4 = Device(pin=25, name="WASHER4", machinetype=WASHER, paymenttype=PAY_COIN)
+    WASHER5 = Device(pin=8,  name="WASHER5", machinetype=WASHER, paymenttype=PAY_COIN)
 
     DEVICES  = [WASHER1, WASHER2, WASHER3, WASHER4, WASHER5]
 
@@ -135,8 +142,10 @@ if __name__ == "__main__":
         current_state["timestamp"] = datetime.datetime.now().isoformat()
         for device in DEVICES:
             device_state = device.compute_and_reset_state()
-            current_state[str(device.name)] = {"status": device.get_status_string()}
+            current_state[str(device.name)] =  device.get_status_string()
 
         print str(current_state)
+
+        result = firebase.put_async('/', FLOOR_NUMBER, current_state, callback=response_callback)
 
 
