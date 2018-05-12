@@ -5,31 +5,7 @@ import time
 import datetime
 
 from firebase import firebase
-
-### Constants
-LIGHT_OFF = 0
-LIGHT_ON = 1
-LIGHT_BLINKING = 2
-
-WASHER = 100
-DRYER = 101
-
-PAY_EZLINK = 200
-PAY_COIN = 201
-
-# Number of seconds to count on/off cycles for to check for blinking
-ON_OFF_COUNT_INTERVAL_SEC = 6
-ON_OFF_COUNT_BLINK_THRESHOLD = 2
-
-# Which pin will be used to control the test LED (during debugging)
-TEST_GPIO_PIN = 18
-LED_PIN = 12
-
-# Debouncing time
-BOUNCETIME = 50
-
-# Floor number for installed pi
-FLOOR_NUMBER = "9"
+from config import *
 
 # Util functions
 current_milli_time = lambda: int(round(time.time() * 1000))
@@ -95,13 +71,13 @@ class Device():
 
 
 
-def setup_devices_gpio():
+def setup_devices_gpio(devices):
     # Use BCM Mode
     GPIO.setmode(GPIO.BCM)
 
     # Set all relevant pins as input, pull down to 0V to have standard washing machine status as off
     # Note for the button case - this has to be PUD_UP
-    for device in DEVICES:
+    for device in devices:
         GPIO.setup(device.pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.add_event_detect(device.pin, GPIO.BOTH, callback=device.callback, bouncetime=BOUNCETIME) 
 
@@ -122,16 +98,11 @@ if __name__ == "__main__":
 
     print "Starting async firebase get"
 
-    # List of BCM-coded Raspi pins
-    WASHER1 = Device(pin=18, name="WASHER1", machinetype=WASHER, paymenttype=PAY_EZLINK)
-    WASHER2 = Device(pin=23, name="WASHER2", machinetype=WASHER, paymenttype=PAY_EZLINK)
-    WASHER3 = Device(pin=24, name="WASHER3", machinetype=WASHER, paymenttype=PAY_EZLINK)
-    WASHER4 = Device(pin=25, name="WASHER4", machinetype=WASHER, paymenttype=PAY_COIN)
-    WASHER5 = Device(pin=8,  name="WASHER5", machinetype=WASHER, paymenttype=PAY_COIN)
+    # Initialize washers and dryers
+    DEVICES = [Device(**washer) for washer in WASHERS]
+    DEVICES += [Device(**dryer) for dryer in DRYERS]
 
-    DEVICES  = [WASHER1, WASHER2, WASHER3, WASHER4, WASHER5]
-
-    setup_devices_gpio()
+    setup_devices_gpio(DEVICES)
 
     # Begin main timer loop
     while True:
