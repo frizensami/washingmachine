@@ -46,9 +46,9 @@ class Device():
 
             self.state = reading
         # Output to test LED if the correct pin is activated 
-        if self.pin == TEST_GPIO_PIN:
-            print "Setting GPIO output to " + str(reading)
-            GPIO.output(LED_PIN, self.state)
+        #if self.pin == TEST_GPIO_PIN:
+        #    print "Setting GPIO output to " + str(reading)
+        #    GPIO.output(LED_PIN, self.state)
 
         # Reset on/off count
         self.num_on = 0
@@ -81,7 +81,7 @@ def setup_devices_gpio(devices):
         GPIO.setup(device.pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.add_event_detect(device.pin, GPIO.BOTH, callback=device.callback, bouncetime=BOUNCETIME) 
 
-    GPIO.setup(LED_PIN, GPIO.OUT)
+    #GPIO.setup(LED_PIN, GPIO.OUT)
 
 def exception_handler(request, exception):
     print "For request: " + str(request) + " got exception: " + str(exception)
@@ -91,32 +91,35 @@ def response_callback(response):
     print response
 
 if __name__ == "__main__":
-    print "Initializing Firebase connection"
-    # Open up network conn to Firebase
-    firebase = firebase.FirebaseApplication('https://tlaundry2.firebaseio.com', None)
-    print "Firebase connection set up."
+        print "Initializing Firebase connection"
+        # Open up network conn to Firebase
+        firebase = firebase.FirebaseApplication('https://tlaundry2.firebaseio.com', None)
+        print "Firebase connection set up."
 
-    print "Starting async firebase get"
+        print "Starting async firebase get"
 
-    # Initialize washers and dryers
-    DEVICES = [Device(**washer) for washer in WASHERS]
-    DEVICES += [Device(**dryer) for dryer in DRYERS]
+        # Initialize washers and dryers
+        DEVICES = [Device(**washer) for washer in WASHERS]
+        DEVICES += [Device(**dryer) for dryer in DRYERS]
 
-    setup_devices_gpio(DEVICES)
+        setup_devices_gpio(DEVICES)
 
-    # Begin main timer loop
-    while True:
-        # Sleep until we want to check the current washer state
-        time.sleep(ON_OFF_COUNT_INTERVAL_SEC)
-        # Go through all the washers and check the state
-        current_state = {}
-        current_state["timestamp"] = datetime.datetime.now().isoformat()
-        for device in DEVICES:
-            device_state = device.compute_and_reset_state()
-            current_state[str(device.name)] =  device.get_status_string()
+        # Begin main timer loop
+        while True:
 
-        print str(current_state)
+            try:
+                # Sleep until we want to check the current washer state
+                time.sleep(ON_OFF_COUNT_INTERVAL_SEC)
+                # Go through all the washers and check the state
+                current_state = {}
+                current_state["timestamp"] = datetime.datetime.now().isoformat()
+                for device in DEVICES:
+                    device_state = device.compute_and_reset_state()
+                    current_state[str(device.name)] =  device.get_status_string()
 
-        result = firebase.put_async('/', FLOOR_NUMBER, current_state, callback=response_callback)
+                print str(current_state)
 
+                result = firebase.put_async('/', FLOOR_NUMBER, current_state, callback=response_callback)
 
+            except Exception as e:
+                print "Exception msg: " + str(e.message) + " args = " + str(e.args)

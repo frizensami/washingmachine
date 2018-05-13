@@ -16,8 +16,8 @@ ON_OFF_COUNT_INTERVAL_SEC = 6
 ON_OFF_COUNT_BLINK_THRESHOLD = 2
 
 # Which pin will be used to control the test LED (during debugging)
-TEST_GPIO_PIN = 18
-LED_PIN = 12
+#TEST_GPIO_PIN = 18
+#LED_PIN = 12
 
 # Debouncing time
 BOUNCETIME = 50
