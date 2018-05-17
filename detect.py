@@ -6,6 +6,7 @@ import datetime
 
 from firebase import firebase
 from config import *
+from subprocess import check_output
 
 # Util functions
 current_milli_time = lambda: int(round(time.time() * 1000))
@@ -37,13 +38,14 @@ class Device():
         print str(self)
 
     def compute_and_reset_state(self):
+        # This is called to get the current state of the sensor right before sending it to Firebase
         reading = 1 - GPIO.input(self.pin)
-
-        # PROBLEM: doesn't update unless rising / falling edge, and if no change but not detected first time
+    
+        # If we have received a certain number of interrupts for on AND off - we are blinking
         if self.num_on > ON_OFF_COUNT_BLINK_THRESHOLD and self.num_off > ON_OFF_COUNT_BLINK_THRESHOLD:
             self.state = LIGHT_BLINKING
         else:
-
+            # If not - we just take the latest reading from the sensor as the state
             self.state = reading
         # Output to test LED if the correct pin is activated 
         #if self.pin == TEST_GPIO_PIN:
@@ -118,6 +120,8 @@ if __name__ == "__main__":
                     current_state[str(device.name)] =  device.get_status_string()
 
                 print str(current_state)
+
+                current_state["ip"] = check_output(['hostname', '-I'])
 
                 result = firebase.put_async('/', FLOOR_NUMBER, current_state, callback=response_callback)
 
