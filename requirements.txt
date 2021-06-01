@@ -6,4 +6,4 @@ grequests==0.3.0
 idna==2.6
 python-firebase==1.2
 requests==2.18.4
-urllib3==1.22
+urllib3==1.26.5
